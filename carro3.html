@@ -1,0 +1,1124 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Carro con micro:bit · Armado en 3D</title>
+<style>
+:root{
+  --bg:#f1f4f7;--card:#fff;--ink:#1b2430;--mut:#5b6877;--line:#d3dae2;--acc:#e8590c;--mat:#e6ebf0;
+  color-scheme:light;box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)
+}
+@media(prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f1318;--card:#171c23;--ink:#e8edf3;--mut:#9aa7b6;--line:#2a323d;--acc:#ff9a3c;--mat:#20262e;
+    color-scheme:dark
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f1318;--card:#171c23;--ink:#e8edf3;--mut:#9aa7b6;--line:#2a323d;--acc:#ff9a3c;--mat:#20262e;
+  color-scheme:dark
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,'Segoe UI',sans-serif}
+main{max-width:1180px;margin:0 auto;padding:14px}
+h1{font-size:1.3rem;margin:4px 0 12px}
+.wrap{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(290px,1fr);gap:14px;align-items:start}
+@media(max-width:860px){.wrap{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.bar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;padding:9px 14px;font-size:.8rem;color:var(--mut)}
+.bar b{color:var(--ink);letter-spacing:.08em}
+.stage{position:relative;width:100%;aspect-ratio:800/540;min-height:320px;background:var(--bg);touch-action:none;cursor:grab;outline:none;user-select:none}
+.stage:active{cursor:grabbing}
+.stage:focus-visible{box-shadow:inset 0 0 0 2px var(--acc)}
+.stage canvas,.stage svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+.stage svg{pointer-events:none}
+.ring{fill:none;stroke:var(--acc);stroke-width:2.5;animation:pl 1.1s ease-in-out infinite}
+@keyframes pl{50%{opacity:.25}}
+.lab rect{fill:var(--card);stroke:var(--acc);stroke-width:1.1}
+.lab text{fill:var(--ink);font:600 12px system-ui,sans-serif;text-anchor:middle}
+.flab{fill:var(--mut);font:700 11px system-ui,sans-serif;text-anchor:middle;letter-spacing:.08em;opacity:.85}
+.ctl{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:12px 0}
+.ctl label{display:flex;align-items:center;gap:8px;color:var(--mut);font-size:.85rem}
+button{font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:7px 12px;min-height:38px;cursor:pointer;transition:border-color .15s}
+button:hover{border-color:var(--mut)}
+button.on{border-color:var(--acc);box-shadow:inset 0 0 0 1.5px var(--acc)}
+button:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+input[type=range]{width:140px;accent-color:var(--acc)}
+#info{padding:16px}
+#info h2{margin:0 0 2px;font-size:1.18rem;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+#info small{color:var(--mut)}
+#info p{margin:8px 0}
+#info ul{margin:6px 0;padding-left:0;list-style:none}
+#info li{display:flex;gap:8px;align-items:flex-start;margin:5px 0;font-size:.9rem}
+.dot{flex:none;display:inline-block;width:13px;height:13px;border-radius:50%;border:1px solid rgba(0,0,0,.4);margin-top:2px}
+.fun{background:var(--bg);border-radius:10px;padding:8px 10px;font-size:.9rem}
+.st{display:inline-block;font-size:.8rem;padding:2px 9px;border-radius:99px;border:1px solid var(--line)}
+#chips h3{margin:14px 0 6px;font-size:.85rem;color:var(--mut)}
+#chips div{display:flex;flex-wrap:wrap;gap:6px}
+#chips button{padding:5px 10px;min-height:34px;font-size:.86rem;display:inline-flex;align-items:center;gap:6px}
+.desc{margin-top:16px;padding:16px}
+.desc h2{margin:0 0 8px;font-size:1.08rem}
+.desc p{margin:0 0 12px;color:var(--mut);font-size:.93rem}
+.dgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+.dbox{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:11px 12px;font-size:.88rem}
+.dbox b{display:block;margin-bottom:4px;color:var(--ink)}
+</style>
+</head>
+<body>
+<main>
+  <h1>🚗 Carro con micro:bit · Armado en 3D</h1>
+
+  <div class="wrap">
+    <section class="card">
+      <div class="bar"><b>FIG 1</b><span>Carro robótico controlado por radio · Giro 360°</span></div>
+      <div class="stage" id="stage" tabindex="0" role="img" aria-label="Modelo 3D del carro con micro:bit. Arrastra en cualquier dirección para girar 360 grados y toca una pieza para ver su nombre y conexiones.">
+        <canvas id="glc"></canvas>
+        <svg id="ov" viewBox="0 0 800 540"></svg>
+      </div>
+      <div class="bar">
+        <span>Arrastra para girar 360° · rueda para zoom · toca una pieza</span>
+        <span id="ro"></span>
+      </div>
+    </section>
+
+    <aside class="card" id="info" aria-live="polite"></aside>
+  </div>
+
+  <div class="ctl" id="steps" role="group" aria-label="Pasos de armado"></div>
+
+  <div class="ctl">
+    <label>Armado <input id="ex" type="range" min="0" max="100" value="0" aria-label="Armado o separado"> Separado</label>
+    <button id="auto">⟳ Girar solo</button>
+    <button id="floorBtn" class="on">⊞ Suelo</button>
+    <button id="zo" aria-label="Alejar">−</button>
+    <button id="zi" aria-label="Acercar">+</button>
+    <span id="views"></span>
+  </div>
+
+  <div id="chips"></div>
+
+  <section class="card desc">
+    <h2>📋 Descripción del aparato</h2>
+    <p>
+      Este modelo representa un <b>carro robótico educativo de tracción diferencial</b> (dos ruedas motrices traseras y una rueda loca frontal)
+      controlado de manera inalámbrica mediante la radio integrada de una placa <b>BBC micro:bit</b>.
+      La micro:bit recibe instrucciones desde un control remoto y envía señales lógicas por sus pines <b>0, 1, 2 y 8</b> al puente H <b>L298N</b>,
+      el cual administra la corriente de la batería para invertir o activar cada motor de forma independiente y así avanzar, retroceder o girar.
+    </p>
+    <div class="dgrid">
+      <div class="dbox">
+        <b>🧠 Cerebro y control</b>
+        micro:bit + placa de expansión. Centraliza la recepción por radio y ordena las señales digitales en la fila amarilla <code>SIG</code> (columnas 0, 1, 2 y 8) junto con la tierra común <code>GND</code>.
+      </div>
+      <div class="dbox">
+        <b>⚡ Etapa de potencia (L298N)</b>
+        Recibe las órdenes débiles en <code>IN1–IN4</code> y entrega la fuerza eléctrica de la batería a través de <code>OUT1–OUT2</code> (motor derecho) y <code>OUT3–OUT4</code> (motor izquierdo).
+      </div>
+      <div class="dbox">
+        <b>⚙️ Mecánica y movimiento</b>
+        Chasis acrílico con separadores de latón, dos motorreductores TT con llantas de alto agarre y una rueda loca delantera de giro libre a 360°.
+      </div>
+      <div class="dbox">
+        <b>🔋 Alimentación y seguridad</b>
+        Batería externa conectada a <code>+12V</code> y <code>GND</code> con empalmes aislados, sujeción firme al chasis y puente de tierra común obligatorio entre la batería, el L298N y la placa de expansión.
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+(()=>{
+const $=s=>document.querySelector(s);
+const D=Math.PI/180;
+const hx=h=>[1,3,5].map(i=>parseInt(h.substr(i,2),16)/255);
+
+/* ---------- geometría del carro (mm, suelo en Z = 0) ---------- */
+const S=[];
+const box=(p,a,b,c,d,e,f,col,o)=>S.push({
+  p,o,t:0,
+  b:[Math.min(a,b),Math.min(c,d),Math.min(e,f),Math.max(a,b),Math.max(c,d),Math.max(e,f)],
+  c:hx(col)
+});
+const cyl=(p,ax,x,y,z,r,l,col,o)=>{
+  const h=l/2;
+  S.push({
+    p,o,t:1,ax,c0:[x,y,z],r,h,c:hx(col),
+    b:ax==='x'?[x-h,y-r,z-r,x+h,y+r,z+r]:ax==='y'?[x-r,y-h,z-r,x+r,y+h,z+r]:[x-r,y-r,z-h,x+r,y+r,z+h]
+  });
+};
+const ball=(p,x,y,z,r,col,o)=>S.push({
+  p,o,t:2,c0:[x,y,z],r,c:hx(col),
+  b:[x-r,y-r,z-r,x+r,y+r,z+r]
+});
+
+// chasis
+box('chasis',-62,62,-105,105,30,34,'#c3ccd6');
+for(const[x,y]of[[-17,-46],[17,-46],[-17,-14],[17,-14],[-38,12],[38,12],[-38,56],[38,56]])
+  cyl('chasis','z',x,y,37,2.6,6,'#d6a93a');
+box('chasis',-3,3,-30,90,34,34.5,'#9aa5b1');
+
+// motores y llantas (apoyan en Z = 0)
+for(const s of[1,-1]){
+  const m=s>0?'motorR':'motorL',w=s>0?'wheelR':'wheelL';
+  box(m,62*s,84*s,-52,-24,24,42,'#f2c230');
+  box(m,66*s,80*s,-80,-52,27,39,'#868e96');
+  box(m,70*s,73*s,-84,-80,34,38,'#d9a441');
+  box(m,74*s,77*s,-84,-80,34,38,'#d9a441');
+  cyl(m,'x',87*s,-38,33,3,6,'#ced4da');
+  cyl(m,'x',59*s,-38,33,3,6,'#ced4da');
+  cyl(w,'x',101*s,-38,33,33,22,'#2b2f36');
+  cyl(w,'x',112.5*s,-38,33,22,1.6,'#f1f3f5');
+  cyl(w,'x',114*s,-38,33,7,1.6,'#adb5bd');
+  cyl(w,'x',89.5*s,-38,33,21,1.4,'#dee2e6');
+}
+
+// rueda loca (apoya en Z = 0)
+box('caster',-10,10,78,98,27.5,30,'#868e96');
+cyl('caster','z',0,88,23,4.2,9,'#adb5bd');
+ball('caster',0,88,10,10,'#ced4da');
+
+// puente H L298N
+{
+  const p='l298n';
+  box(p,-21,21,-51,-9,40,42,'#c92a2a');
+  box(p,-8,8,-40,-20,42,60,'#2e3338');
+  for(let i=0;i<5;i++)box(p,-8,8,-39+4*i,-37.5+4*i,60,62.5,'#4a525a');
+  box(p,14,21,-38,-22,42,52,'#1c7ed6');
+  box(p,-21,-14,-38,-22,42,52,'#1c7ed6');
+  box(p,-12,12,-51,-43,42,52,'#1c7ed6');
+  for(const[x,y]of[[17.5,-26],[17.5,-34],[-17.5,-26],[-17.5,-34],[-8,-47],[0,-47],[8,-47]])
+    cyl(p,'z',x,y,52.75,2.4,1.5,'#adb5bd');
+  for(let i=0;i<4;i++)box(p,-10+6*i,-8+6*i,-13,-11,42,50,'#e0b43c');
+  box(p,13,19,-16,-10,42,47,'#111111');
+  box(p,-19,-13,-16,-10,42,47,'#111111');
+}
+
+// placa de expansión
+{
+  const p='exp';
+  box(p,-42,42,8,60,40,42,'#212529');
+  box(p,-38,38,11.5,14.5,42,44,'#f2c230');
+  box(p,-38,38,15.5,18.5,42,44,'#e03131');
+  box(p,-38,38,19.5,22.5,42,44,'#495057');
+  for(let i=0;i<9;i++)for(const y of[13,17,21])
+    box(p,-34+8.5*i-.8,-34+8.5*i+.8,y-.8,y+.8,44,50,'#e0b43c');
+  box(p,-28,28,54,58,42,48,'#495057');
+  box(p,-41,-35,38,46,42,47,'#f1f3f5');
+}
+
+// micro:bit del carro
+{
+  const p='mb';
+  box(p,-26,26,58,100,43,44.6,'#1b1f24');
+  box(p,-24,24,58,62,44.6,45.0,'#e0b43c');
+  box(p,-9,9,76,92,44.6,45.5,'#8a2b2b');
+  box(p,-23,-16,70,77,44.6,46.6,'#868e96');
+  box(p,16,23,70,77,44.6,46.6,'#868e96');
+  box(p,-5,5,64,70,44.6,45.6,'#343a40');
+}
+
+// batería, empalmes y cinta
+box('bat',-28,28,-100,-72,34,50,'#212529');
+box('bat',-20,20,-99,-73,50,50.8,'#f08c00');
+box('k9',-12,-8,-64,-60,46,50,'#111111','bat');
+box('k10',6,10,-64,-60,46,50,'#111111','bat');
+for(const y of[-92,-80]){
+  box('tape',-28,28,y,y+4,50,51,'#495057');
+  box('tape',28,29,y,y+4,34,51,'#495057');
+  box('tape',-29,-28,y,y+4,34,51,'#495057');
+}
+
+/* ---------- datos de armado y cables ---------- */
+const OFF={
+  chasis:[0,0,0],motorR:[34,0,0],motorL:[-34,0,0],wheelR:[75,0,0],wheelL:[-75,0,0],
+  caster:[0,0,-36],l298n:[0,0,58],exp:[0,0,100],mb:[0,50,115],bat:[0,-48,34],tape:[0,-48,70]
+};
+const STEP={
+  chasis:1,motorR:1,motorL:1,wheelR:1,wheelL:1,caster:1,
+  l298n:2,k1:2,k2:2,k3:2,k4:2,
+  exp:3,k5:3,k6:3,k7:3,k8:3,
+  bat:4,k9:4,k10:4,k11:4,
+  mb:5,tape:5
+};
+const STEPT=[
+  'Montar motores y ruedas',
+  'Motores al puente H',
+  'Puente H a expansión',
+  'Alimentación y GND',
+  'Micro:bit y orden final'
+];
+const mir=n=>n.map(q=>[-q[0],q[1],q[2]]);
+const K1=[[71.5,-84,36],[71.5,-88,50],[54,-50,64],[32,-26,62],[17.5,-26,53.5]];
+const K2=[[75.5,-84,36],[75.5,-90,54],[58,-52,68],[34,-34,66],[17.5,-34,53.5]];
+const tip1='Si el motor gira al revés, intercambia sus dos cables en el borne OUT. Aprieta bien el tornillo y no dejes hilos de cobre por fuera.';
+const tipIN=c=>'Enchufa primero este cable en el pin IN del puente H y luego en la fila amarilla SIG, columna '+c+'. Nunca en las filas 3.3V, GND ni 5V.';
+
+const CL=[
+  ['k1','Rojo','#e03131','motorR','l298n','Motor derecho','Puente H, borne OUT1','Motor der.','OUT1',K1,tip1],
+  ['k2','Verde','#2f9e44','motorR','l298n','Motor derecho','Puente H, borne OUT2','Motor der.','OUT2',K2,tip1],
+  ['k3','Amarillo','#fcc419','motorL','l298n','Motor izquierdo','Puente H, borne OUT3','Motor izq.','OUT3',mir(K1),tip1],
+  ['k4','Café','#8d5524','motorL','l298n','Motor izquierdo','Puente H, borne OUT4','Motor izq.','OUT4',mir(K2),tip1],
+  ['k5','Amarillo','#fcc419','l298n','exp','Puente H, pin IN1','Placa de expansión, SIG del pin 2','IN1','Pin 2',[[-9,-12,50],[-9,-8,64],[-17,8,64],[-17,13,50]],tipIN(2)],
+  ['k6','Rojo','#e03131','l298n','exp','Puente H, pin IN2','Placa de expansión, SIG del pin 8','IN2','Pin 8',[[-3,-12,50],[-3,-6,74],[34,10,74],[34,13,50]],tipIN(8)],
+  ['k7','Naranja','#fd7e14','l298n','exp','Puente H, pin IN3','Placa de expansión, SIG del pin 1','IN3','Pin 1',[[3,-12,50],[3,-3,68],[-25.5,9,68],[-25.5,13,50]],tipIN(1)],
+  ['k8','Blanco','#f8f9fa','l298n','exp','Puente H, pin IN4','Placa de expansión, SIG del pin 0','IN4','Pin 0',[[9,-12,50],[9,-1,84],[-34,10,84],[-34,13,50]],tipIN(0)],
+  ['k9','Verde','#2f9e44','bat','l298n','Puente H, borne +12V','Cable rojo de la batería','Empalme','+12V',[[-10,-62,48],[-10,-56,58],[-8,-49,57],[-8,-47,53.5]],'Solo este cable va en +12V. Se une al rojo de la batería con un empalme bien aislado con cinta. Pide ayuda a un adulto.'],
+  ['k10','Café','#8d5524','bat','l298n','Puente H, borne GND','Cable negro de la batería','Empalme','GND',[[8,-62,48],[8,-56,58],[2,-50,57],[-1.5,-47,53.5]],'El borne GND lleva dos cables: este café y el negro de la placa. El borne +5V se queda libre.'],
+  ['k11','Negro','#212529','l298n','exp','Puente H, borne GND','Placa de expansión, GND del pin 0','GND','GND col. 0',[[1.5,-47,53.5],[1.5,-53,70],[-34,-53,72],[-34,-4,72],[-34,21,50]],'Es la tierra común: sin este cable la micro:bit y el puente H no hablan el mismo idioma y los motores no obedecen.']
+].map(r=>({id:r[0],cn:r[1],hex:r[2],col:hx(r[2]),a:r[3],b:r[4],from:r[5],to:r[6],la:r[7],lb:r[8],nodes:r[9],tip:r[10],n:+r[0].slice(1)}));
+const C=Object.fromEntries(CL.map(c=>[c.id,c]));
+
+const LEADS=[
+  {id:'lr',hit:'bat',hex:'#e03131',col:hx('#e03131'),a:'bat',b:'bat',nodes:[[-10,-72,44],[-10,-66,46],[-10,-62,48]]},
+  {id:'lk',hit:'bat',hex:'#212529',col:hx('#212529'),a:'bat',b:'bat',nodes:[[8,-72,44],[8,-66,46],[8,-62,48]]}
+];
+
+const LBL={
+  l298n:[['OUT1',17.5,-26,54],['OUT2',17.5,-34,54],['OUT3',-17.5,-26,54],['OUT4',-17.5,-34,54],['+12V',-8,-47,54],['GND',0,-47,54],['+5V libre',8,-47,54],['IN1',-9,-12,51],['IN2',-3,-12,51],['IN3',3,-12,51],['IN4',9,-12,51],['ENA',-16,-13,48],['ENB',16,-13,48]],
+  exp:[['0',-34,26,44],['1',-25.5,26,44],['2',-17,26,44],['8',34,26,44],['SIG',-42,13,45]]
+};
+
+const INFO={
+  chasis:['🛞','Chasis de dos ruedas','Movimiento','Es el cuerpo o plataforma del carro: aquí se sujetan los motores, las placas y la batería.','La rueda loca gira libre, ¡igual que las de un carrito de mercado!'],
+  motorR:['⚙️','Motorreductor derecho','Movimiento','Motor eléctrico con engranajes amarillos que le dan fuerza para mover el carro. Sus cables rojo y verde van al puente H. Su eje interior no se usa.','Sin los engranajes, el motor giraría tan rápido que el carro no arrancaría.'],
+  motorL:['⚙️','Motorreductor izquierdo','Movimiento','Motor eléctrico con engranajes amarillos. Sus cables amarillo y café van al puente H. Su eje interior no se usa.','Cada motor se mueve solo: así el carro puede girar.'],
+  wheelR:['🛞','Llanta derecha','Movimiento','Se encaja hasta el fondo en el eje exterior del motorreductor para que el carro ruede con buen agarre.','Si solo gira la llanta derecha, ¡el carro da vuelta a la izquierda!'],
+  wheelL:['🛞','Llanta izquierda','Movimiento','Se encaja hasta el fondo en el eje exterior del motorreductor izquierdo.','Si solo gira la llanta izquierda, ¡el carro da vuelta a la derecha.'],
+  caster:['🔘','Rueda loca','Movimiento','Una bolita libre en el frente: sostiene el carro y lo deja girar fácil hacia cualquier lado.','Gira en cualquier dirección sin esfuerzo.'],
+  l298n:['💪','Puente H L298N','Potencia','Recibe las señales suaves de la micro:bit y entrega la corriente fuerte de la batería para girar los motores hacia adelante o en reversa.','Se llama puente H porque por dentro sus interruptores forman la letra H.',['Bornes azules OUT1–OUT2: motor derecho','Bornes azules OUT3–OUT4: motor izquierdo','Borne de 3 tornillos: +12V, GND y +5V (libre)','Capuchones negros ENA y ENB: déjalos siempre puestos','Pines IN1–IN4: reciben las órdenes de la micro:bit']],
+  exp:['🧩','Placa de expansión','Cerebro','Permite conectar los cables Dupont a los pines 0, 1, 2, 8 y GND de forma ordenada, sin soldar.','Cada columna saca el mismo pin con su fila de señal (SIG) y su fila de tierra (GND).',['Fila amarilla SIG: aquí llegan las señales IN1–IN4','Columnas 0, 1, 2 y 8: las que usa el programa','Filas 3.3V y 5V: no conectes nada aquí','Ranura superior: entra la micro:bit con los LED hacia arriba']],
+  mb:['🧠','micro:bit del carro','Cerebro','Es el cerebro del carro: escucha por radio las órdenes del control y le dice al puente H qué motores mover.','Cada micro:bit tiene una antena de radio escondida para hablar sin cables.'],
+  bat:['🔋','Batería','Energía','Da la energía que necesitan los motores a través del puente H. Cable rojo (+) y cable negro (−). Verifica su voltaje con un adulto.','El rojo suele ser positivo (+) y el negro negativo (−) en casi toda la electrónica.'],
+  tape:['🎀','Cinta o amarres','Energía','Mantienen la batería firme en el chasis y evitan que los cables cuelguen y se enreden con las llantas.','Hasta los rovers de Marte usan amarres ordenados.']
+};
+
+/* ---------- mapa de IDs para selección por píxel ---------- */
+const PART_IDS=[...Object.keys(INFO),...CL.map(c=>c.id)];
+const ID_TO_NUM=Object.fromEntries(PART_IDS.map((id,i)=>[id,i+1]));
+const NUM_TO_ID=Object.fromEntries(PART_IDS.map((id,i)=>[i+1,id]));
+
+/* ---------- estado ---------- */
+let sel=null,fs=null,step=5,showFloor=true;
+let az=150,el=28,zm=1,g=0;
+let taz=150,tel=28,tzm=1,tg=0;
+let auto=!matchMedia('(prefers-reduced-motion:reduce)').matches;
+let drag=false,dirty=2,RS=new Set();
+const dc={},dtg={};
+
+const shown=p=>(STEP[p]||5)<=step;
+const amt=p=>Math.min(1.25,g+(dc[p]||0));
+const off=p=>(OFF[p]||[0,0,0]).map(v=>v*amt(p));
+const mp=p=>p==='lr'||p==='lk'?'bat':p;
+const opac=p=>sel?(RS.has(p)?1:.16):fs?(STEP[p]==fs?1:.38):1;
+const nearDeg=(cur,tgt)=>cur+((((tgt-cur)%360)+540)%360-180);
+
+const cpos=c=>{
+  const oa=off(c.a),ob=off(c.b),n=c.nodes.length,l=50*(dc[c.id]||0);
+  return c.nodes.map((q,i)=>{
+    const t=i/(n-1);
+    return[q[0]+oa[0]*(1-t)+ob[0]*t,q[1]+oa[1]*(1-t)+ob[1]*t,q[2]+oa[2]*(1-t)+(ob[2]+l)*t];
+  });
+};
+
+/* ---------- motor WebGL 3D (Z-buffer real, sin dependencias) ---------- */
+const canvas=$('#glc'),ov=$('#ov'),stage=$('#stage');
+const gl=canvas.getContext('webgl',{antialias:true,alpha:false,preserveDrawingBuffer:false})
+       ||canvas.getContext('experimental-webgl',{antialias:true,alpha:false});
+if(!gl){
+  ov.innerHTML='<text x="400" y="270" text-anchor="middle" fill="currentColor" font-size="18">Tu navegador no soporta WebGL.</text>';
+  return;
+}
+
+const compile=(type,src)=>{
+  const sh=gl.createShader(type);
+  gl.shaderSource(sh,src);
+  gl.compileShader(sh);
+  if(!gl.getShaderParameter(sh,gl.COMPILE_STATUS)){
+    console.error(gl.getShaderInfoLog(sh));
+  }
+  return sh;
+};
+const link=(vs,fsSrc)=>{
+  const pr=gl.createProgram();
+  gl.attachShader(pr,compile(gl.VERTEX_SHADER,vs));
+  gl.attachShader(pr,compile(gl.FRAGMENT_SHADER,fsSrc));
+  gl.linkProgram(pr);
+  if(!gl.getProgramParameter(pr,gl.LINK_STATUS)){
+    console.error(gl.getProgramInfoLog(pr));
+  }
+  return pr;
+};
+
+const progMain=link(`
+  attribute vec3 aPos;
+  attribute vec3 aNorm;
+  attribute vec3 aCol;
+  uniform mat4 uMVP;
+  uniform mat4 uView;
+  varying vec3 vNorm;
+  varying vec3 vCol;
+  void main(){
+    gl_Position = uMVP * vec4(aPos, 1.0);
+    vNorm = mat3(uView) * aNorm;
+    vCol = aCol;
+  }
+`,`
+  precision mediump float;
+  varying vec3 vNorm;
+  varying vec3 vCol;
+  uniform float uAlpha;
+  uniform float uUnlit;
+  void main(){
+    if(uUnlit > 0.5){
+      gl_FragColor = vec4(vCol, uAlpha);
+      return;
+    }
+    vec3 n = normalize(vNorm);
+    if(!gl_FrontFacing) n = -n;
+    float key  = max(0.0, dot(n, normalize(vec3(-0.42, 0.65, 0.63))));
+    float fill = max(0.0, dot(n, normalize(vec3( 0.58,-0.32, 0.42))));
+    float rim  = max(0.0, dot(n, normalize(vec3( 0.00, 0.15, 0.98))));
+    float lit  = 0.34 + 0.48 * key + 0.18 * fill + 0.12 * rim;
+    gl_FragColor = vec4(min(vec3(1.0), vCol * lit), uAlpha);
+  }
+`);
+
+const progPick=link(`
+  attribute vec3 aPos;
+  attribute vec3 aCol;
+  uniform mat4 uMVP;
+  varying vec3 vCol;
+  void main(){
+    gl_Position = uMVP * vec4(aPos, 1.0);
+    vCol = aCol;
+  }
+`,`
+  precision mediump float;
+  varying vec3 vCol;
+  void main(){
+    gl_FragColor = vec4(vCol, 1.0);
+  }
+`);
+
+const locM={
+  pos:gl.getAttribLocation(progMain,'aPos'),
+  norm:gl.getAttribLocation(progMain,'aNorm'),
+  col:gl.getAttribLocation(progMain,'aCol'),
+  mvp:gl.getUniformLocation(progMain,'uMVP'),
+  view:gl.getUniformLocation(progMain,'uView'),
+  alpha:gl.getUniformLocation(progMain,'uAlpha'),
+  unlit:gl.getUniformLocation(progMain,'uUnlit')
+};
+const locP={
+  pos:gl.getAttribLocation(progPick,'aPos'),
+  col:gl.getAttribLocation(progPick,'aCol'),
+  mvp:gl.getUniformLocation(progPick,'uMVP')
+};
+
+const mkBuf=()=>({pos:gl.createBuffer(),norm:gl.createBuffer(),col:gl.createBuffer()});
+const bOpaque=mkBuf(),bGhost=mkBuf(),bEdge=mkBuf(),bFloor=mkBuf(),bGrid=mkBuf(),bPick=mkBuf();
+
+// Framebuffer offscreen para selección exacta al tocar una pieza
+const PW=400,PH=270;
+const pickFBO=gl.createFramebuffer();
+const pickTex=gl.createTexture();
+gl.bindTexture(gl.TEXTURE_2D,pickTex);
+gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,PW,PH,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
+gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.NEAREST);
+gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.NEAREST);
+gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+const pickRB=gl.createRenderbuffer();
+gl.bindRenderbuffer(gl.RENDERBUFFER,pickRB);
+gl.renderbufferStorage(gl.RENDERBUFFER,gl.DEPTH_COMPONENT16,PW,PH);
+gl.bindFramebuffer(gl.FRAMEBUFFER,pickFBO);
+gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,pickTex,0);
+gl.framebufferRenderbuffer(gl.FRAMEBUFFER,gl.DEPTH_ATTACHMENT,gl.RENDERBUFFER,pickRB);
+gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+
+/* ---------- generadores de mallas 3D ---------- */
+const pushTri=(out,a,b,c,na,nb,nc,col)=>{
+  out.p.push(a[0],a[1],a[2],b[0],b[1],b[2],c[0],c[1],c[2]);
+  out.n.push(na[0],na[1],na[2],nb[0],nb[1],nb[2],nc[0],nc[1],nc[2]);
+  out.c.push(col[0],col[1],col[2],col[0],col[1],col[2],col[0],col[1],col[2]);
+};
+const pushFlatTri=(out,a,b,c,n,col)=>pushTri(out,a,b,c,n,n,n,col);
+const pushQuad=(out,a,b,c,d,n,col)=>{
+  pushFlatTri(out,a,b,c,n,col);
+  pushFlatTri(out,a,c,d,n,col);
+};
+const pushLine=(out,a,b,col)=>{
+  out.p.push(a[0],a[1],a[2],b[0],b[1],b[2]);
+  out.n.push(0,0,1,0,0,1);
+  out.c.push(col[0],col[1],col[2],col[0],col[1],col[2]);
+};
+
+function addBox(out,edgeOut,b,col,edgeCol){
+  const[x0,y0,z0,x1,y1,z1]=b;
+  const v=[
+    [x0,y0,z0],[x1,y0,z0],[x1,y1,z0],[x0,y1,z0],
+    [x0,y0,z1],[x1,y0,z1],[x1,y1,z1],[x0,y1,z1]
+  ];
+  pushQuad(out,v[0],v[4],v[7],v[3],[-1,0,0],col);
+  pushQuad(out,v[1],v[2],v[6],v[5],[ 1,0,0],col);
+  pushQuad(out,v[0],v[1],v[5],v[4],[0,-1,0],col);
+  pushQuad(out,v[3],v[7],v[6],v[2],[0, 1,0],col);
+  pushQuad(out,v[0],v[3],v[2],v[1],[0,0,-1],col);
+  pushQuad(out,v[4],v[5],v[6],v[7],[0,0, 1],col);
+  if(edgeOut){
+    const E=[[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]];
+    for(const[i,j]of E)pushLine(edgeOut,v[i],v[j],edgeCol);
+  }
+}
+
+function addCyl(out,edgeOut,ax,c0,r,h,col,edgeCol,seg=24){
+  const[x,y,z]=c0;
+  const M=(u,a,b)=>ax==='x'?[x+u,y+a,z+b]:ax==='y'?[x+a,y+u,z+b]:[x+a,y+b,z+u];
+  const N=(a,b)=>ax==='x'?[0,a,b]:ax==='y'?[a,0,b]:[a,b,0];
+  const axN=ax==='x'?[1,0,0]:ax==='y'?[0,1,0]:[0,0,1];
+  const axNeg=axN.map(v=>-v);
+  const cNeg=M(-h,0,0),cPos=M(h,0,0);
+  for(let k=0;k<seg;k++){
+    const t0=k/seg*Math.PI*2,t1=(k+1)/seg*Math.PI*2;
+    const ca0=Math.cos(t0),sa0=Math.sin(t0),ca1=Math.cos(t1),sa1=Math.sin(t1);
+    const p00=M(-h,ca0*r,sa0*r),p10=M(h,ca0*r,sa0*r);
+    const p01=M(-h,ca1*r,sa1*r),p11=M(h,ca1*r,sa1*r);
+    const n0=N(ca0,sa0),n1=N(ca1,sa1);
+    pushTri(out,p00,p10,p11,n0,n0,n1,col);
+    pushTri(out,p00,p11,p01,n0,n1,n1,col);
+    pushFlatTri(out,cPos,p10,p11,axN,col);
+    pushFlatTri(out,cNeg,p01,p00,axNeg,col);
+    if(edgeOut){
+      pushLine(edgeOut,p10,p11,edgeCol);
+      pushLine(edgeOut,p00,p01,edgeCol);
+    }
+  }
+}
+
+function addSphere(out,c0,r,col,lat=12,lon=18){
+  const[cx,cy,cz]=c0;
+  const pt=(i,j)=>{
+    const ph=i/lat*Math.PI,th=j/lon*Math.PI*2;
+    const nx=Math.sin(ph)*Math.cos(th),ny=Math.sin(ph)*Math.sin(th),nz=Math.cos(ph);
+    return[[cx+nx*r,cy+ny*r,cz+nz*r],[nx,ny,nz]];
+  };
+  for(let i=0;i<lat;i++){
+    for(let j=0;j<lon;j++){
+      const[p00,n00]=pt(i,j),[p10,n10]=pt(i+1,j),[p11,n11]=pt(i+1,j+1),[p01,n01]=pt(i,j+1);
+      if(i>0)pushTri(out,p00,p10,p01,n00,n10,n01,col);
+      if(i<lat-1)pushTri(out,p10,p11,p01,n10,n11,n01,col);
+    }
+  }
+}
+
+const norm3=v=>{const l=Math.hypot(v[0],v[1],v[2])||1;return[v[0]/l,v[1]/l,v[2]/l]};
+const cross3=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+const sub3=(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]];
+const dot3=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+
+function sampleCurve(Q){
+  const pts=[Q[0]];
+  let cur=Q[0];
+  for(let i=1;i<Q.length-1;i++){
+    const next=i===Q.length-2?Q[Q.length-1]:[
+      (Q[i][0]+Q[i+1][0])/2,(Q[i][1]+Q[i+1][1])/2,(Q[i][2]+Q[i+1][2])/2
+    ];
+    for(let s=1;s<=6;s++){
+      const t=s/6,u=1-t;
+      pts.push([
+        u*u*cur[0]+2*u*t*Q[i][0]+t*t*next[0],
+        u*u*cur[1]+2*u*t*Q[i][1]+t*t*next[1],
+        u*u*cur[2]+2*u*t*Q[i][2]+t*t*next[2]
+      ]);
+    }
+    cur=next;
+  }
+  if(Q.length===2)pts.push(Q[1]);
+  return pts;
+}
+
+function addTube(out,Q,r,col,seg=8){
+  const raw=sampleCurve(Q),pts=[raw[0]];
+  for(let i=1;i<raw.length;i++){
+    if(Math.hypot(...sub3(raw[i],pts[pts.length-1]))>0.2)pts.push(raw[i]);
+  }
+  if(pts.length<2)return;
+  const rings=[];
+  let prevN=null;
+  for(let i=0;i<pts.length;i++){
+    const t=i===0?norm3(sub3(pts[1],pts[0])):i===pts.length-1?norm3(sub3(pts[i],pts[i-1])):norm3(sub3(pts[i+1],pts[i-1]));
+    let n;
+    if(!prevN){
+      const ref=Math.abs(t[2])<0.9?[0,0,1]:[1,0,0];
+      n=norm3(cross3(t,ref));
+    }else{
+      const d=dot3(prevN,t);
+      n=norm3([prevN[0]-d*t[0],prevN[1]-d*t[1],prevN[2]-d*t[2]]);
+    }
+    const b=norm3(cross3(t,n));
+    prevN=n;
+    const ring=[],norms=[];
+    for(let k=0;k<seg;k++){
+      const a=k/seg*Math.PI*2,ca=Math.cos(a),sa=Math.sin(a);
+      const nn=[ca*n[0]+sa*b[0],ca*n[1]+sa*b[1],ca*n[2]+sa*b[2]];
+      norms.push(nn);
+      ring.push([pts[i][0]+nn[0]*r,pts[i][1]+nn[1]*r,pts[i][2]+nn[2]*r]);
+    }
+    rings.push([ring,norms]);
+  }
+  for(let i=0;i<rings.length-1;i++){
+    const[r0,n0]=rings[i],[r1,n1]=rings[i+1];
+    for(let k=0;k<seg;k++){
+      const kn=(k+1)%seg;
+      pushTri(out,r0[k],r1[k],r1[kn],n0[k],n1[k],n1[kn],col);
+      pushTri(out,r0[k],r1[kn],r0[kn],n0[k],n1[kn],n0[kn],col);
+    }
+  }
+}
+
+/* ---------- matemáticas de cámara (360° continuo en ambos ejes) ---------- */
+const CENTER=[0,0,34];
+let curMVP=new Float32Array(16),curView=new Float32Array(16);
+
+function mulMat(A,B){
+  const O=new Float32Array(16);
+  for(let c=0;c<4;c++)for(let r=0;r<4;r++)
+    O[c*4+r]=A[r]*B[c*4]+A[4+r]*B[c*4+1]+A[8+r]*B[c*4+2]+A[12+r]*B[c*4+3];
+  return O;
+}
+
+function updateMatrices(){
+  const cA=Math.cos(az*D),sA=Math.sin(az*D),cE=Math.cos(el*D),sE=Math.sin(el*D);
+  const R=[cA,-sA,0];
+  const U=[sA*sE,cA*sE,cE];
+  const B=[-sA*cE,-cA*cE,sE];
+  const Dcam=510/zm;
+  const V=new Float32Array([
+    R[0],U[0],B[0],0,
+    R[1],U[1],B[1],0,
+    R[2],U[2],B[2],0,
+    -dot3(CENTER,R),
+    -dot3(CENTER,U),
+    -dot3(CENTER,B)-Dcam,
+    1
+  ]);
+  const fov=34*D,f=1/Math.tan(fov/2),asp=800/540,near=15,far=3000,nf=1/(near-far);
+  const P=new Float32Array([
+    f/asp,0,0,0,
+    0,f,0,0,
+    0,0,(far+near)*nf,-1,
+    0,0,2*far*near*nf,0
+  ]);
+  curView=V;
+  curMVP=mulMat(P,V);
+}
+
+function project(v){
+  const m=curMVP;
+  const cx=m[0]*v[0]+m[4]*v[1]+m[8]*v[2]+m[12];
+  const cy=m[1]*v[0]+m[5]*v[1]+m[9]*v[2]+m[13];
+  const cw=m[3]*v[0]+m[7]*v[1]+m[11]*v[2]+m[15];
+  if(cw<=1)return null;
+  return[(cx/cw*0.5+0.5)*800,(0.5-cy/cw*0.5)*540];
+}
+
+/* ---------- construcción de buffers de escena ---------- */
+const emptyMesh=()=>({p:[],n:[],c:[]});
+const counts={op:0,gh:0,ed:0,fl:0,gr:0,pk:0};
+
+function upload(buf,mesh){
+  gl.bindBuffer(gl.ARRAY_BUFFER,buf.pos);
+  gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(mesh.p),gl.DYNAMIC_DRAW);
+  gl.bindBuffer(gl.ARRAY_BUFFER,buf.norm);
+  gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(mesh.n),gl.DYNAMIC_DRAW);
+  gl.bindBuffer(gl.ARRAY_BUFFER,buf.col);
+  gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(mesh.c),gl.DYNAMIC_DRAW);
+  return mesh.p.length/3;
+}
+
+const isDark=()=>document.documentElement.dataset.theme==='dark'||
+  (document.documentElement.dataset.theme!=='light'&&matchMedia('(prefers-color-scheme:dark)').matches);
+
+function rebuildGeometry(){
+  RS=new Set();
+  if(sel){
+    RS.add(sel);
+    const c=C[sel];
+    if(c){RS.add(c.a);RS.add(c.b)}
+    else CL.forEach(c=>{if(c.a===sel||c.b===sel){RS.add(c.id);RS.add(c.a===sel?c.b:c.a)}});
+  }
+
+  const dark=isDark();
+  const accCol=hx(dark?'#ff9a3c':'#e8590c');
+  const darkEdge=dark?[0.08,0.10,0.13]:[0.14,0.17,0.22];
+
+  const mOp=emptyMesh(),mGh=emptyMesh(),mEd=emptyMesh(),mFl=emptyMesh(),mGr=emptyMesh(),mPk=emptyMesh();
+
+  // 1. Sólidos del carro
+  S.forEach(s=>{
+    if(!shown(s.p))return;
+    const o=off(s.o||s.p),hp=mp(s.p),a=opac(hp);
+    const target=a>0.9?mOp:mGh;
+    const isSel=sel===hp;
+    const eTarget=a>0.9?mEd:null;
+    const eCol=isSel?accCol:darkEdge;
+    const col=isSel?s.c.map(v=>Math.min(1,v*1.12+0.05)):s.c;
+    const idNum=ID_TO_NUM[hp]||0;
+    const pkCol=[idNum*8/255,0,0];
+
+    if(s.t===0){
+      const b=s.b.map((v,i)=>v+o[i%3]);
+      addBox(target,eTarget,b,col,eCol);
+      addBox(mPk,null,b,pkCol,pkCol);
+    }else if(s.t===1){
+      const c0=s.c0.map((v,i)=>v+o[i]);
+      addCyl(target,eTarget,s.ax,c0,s.r,s.h,col,eCol,24);
+      addCyl(mPk,null,s.ax,c0,s.r,s.h,pkCol,pkCol,16);
+    }else{
+      const c0=s.c0.map((v,i)=>v+o[i]);
+      addSphere(target,c0,s.r,col,12,18);
+      addSphere(mPk,c0,s.r,pkCol,8,12);
+    }
+  });
+
+  // 2. Cables 3D (tubos reales con Z-buffer)
+  CL.concat(LEADS).forEach(c=>{
+    const hp=c.hit||c.id;
+    if(!shown(hp))return;
+    const Q=cpos(c),a=opac(hp);
+    const target=a>0.9?mOp:mGh;
+    const isSel=sel===hp;
+    const col=isSel?c.col.map((v,i)=>v*0.75+accCol[i]*0.25):c.col;
+    addTube(target,Q,isSel?2.2:1.65,col,8);
+    const idNum=ID_TO_NUM[hp]||0;
+    addTube(mPk,Q,3.4,[idNum*8/255,0,0],6);
+  });
+
+  // 3. Plano de suelo en Z = 0 + sombras de contacto + cuadrícula
+  if(showFloor){
+    const matCol=dark?[0.16,0.20,0.26]:[0.86,0.89,0.93];
+    const arrowCol=dark?[0.98,0.58,0.22]:[0.90,0.36,0.06];
+    const shadowCol=dark?[0.03,0.04,0.06]:[0.54,0.59,0.66];
+    const lineCol=dark?[0.34,0.40,0.48]:[0.64,0.70,0.77];
+    const majorCol=dark?[0.48,0.56,0.66]:[0.44,0.51,0.60];
+
+    pushQuad(mFl,[-160,-160,-0.35],[160,-160,-0.35],[160,160,-0.35],[-160,160,-0.35],[0,0,1],matCol);
+    pushFlatTri(mFl,[0,152,-0.22],[-13,134,-0.22],[13,134,-0.22],[0,0,1],arrowCol);
+
+    if(g<0.65){
+      const addDisc=(cx,cy,rx,ry)=>{
+        const seg=18,z=-0.26;
+        for(let k=0;k<seg;k++){
+          const a0=k/seg*Math.PI*2,a1=(k+1)/seg*Math.PI*2;
+          pushFlatTri(mFl,[cx,cy,z],[cx+Math.cos(a0)*rx,cy+Math.sin(a0)*ry,z],[cx+Math.cos(a1)*rx,cy+Math.sin(a1)*ry,z],[0,0,1],shadowCol);
+        }
+      };
+      addDisc(0,0,66,104);
+      addDisc(101,-38,16,32);
+      addDisc(-101,-38,16,32);
+      addDisc(0,88,12,12);
+    }
+
+    for(let v=-160;v<=160;v+=20){
+      const col=(v===0||Math.abs(v)===160)?majorCol:lineCol;
+      pushLine(mGr,[v,-160,-0.18],[v,160,-0.18],col);
+      pushLine(mGr,[-160,v,-0.18],[160,v,-0.18],col);
+    }
+  }
+
+  counts.op=upload(bOpaque,mOp);
+  counts.gh=upload(bGhost,mGh);
+  counts.ed=upload(bEdge,mEd);
+  counts.fl=upload(bFloor,mFl);
+  counts.gr=upload(bGrid,mGr);
+  counts.pk=upload(bPick,mPk);
+}
+
+function bindMain(buf){
+  gl.bindBuffer(gl.ARRAY_BUFFER,buf.pos);
+  gl.enableVertexAttribArray(locM.pos);
+  gl.vertexAttribPointer(locM.pos,3,gl.FLOAT,false,0,0);
+  gl.bindBuffer(gl.ARRAY_BUFFER,buf.norm);
+  gl.enableVertexAttribArray(locM.norm);
+  gl.vertexAttribPointer(locM.norm,3,gl.FLOAT,false,0,0);
+  gl.bindBuffer(gl.ARRAY_BUFFER,buf.col);
+  gl.enableVertexAttribArray(locM.col);
+  gl.vertexAttribPointer(locM.col,3,gl.FLOAT,false,0,0);
+}
+
+function resizeCanvas(){
+  const dpr=Math.min(window.devicePixelRatio||1,2);
+  const w=Math.max(1,Math.round(stage.clientWidth*dpr));
+  const h=Math.max(1,Math.round(stage.clientHeight*dpr));
+  if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;return true}
+  return false;
+}
+
+const lab=(x,y,t)=>{
+  const w=t.length*7.1+14;
+  x=Math.max(w/2+4,Math.min(796-w/2,x));
+  y=Math.max(18,Math.min(532,y));
+  return`<g class="lab" transform="translate(${x.toFixed(0)} ${y.toFixed(0)})"><rect x="${-w/2}" y="-14" width="${w}" height="22" rx="8"/><text y="2">${t}</text></g>`;
+};
+
+function renderOverlay(){
+  let h='';
+  if(showFloor){
+    const pf=project([0,168,0]),pb=project([0,-168,0]);
+    if(pf)h+=`<text class="flab" x="${pf[0].toFixed(1)}" y="${(pf[1]+4).toFixed(1)}">▲ FRENTE</text>`;
+    if(pb)h+=`<text class="flab" x="${pb[0].toFixed(1)}" y="${(pb[1]+4).toFixed(1)}">ATRÁS</text>`;
+  }
+
+  CL.forEach(c=>{
+    if(!shown(c.id))return;
+    if(sel===c.id||(sel&&RS.has(c.id)&&!C[sel])){
+      const Q=cpos(c);
+      const ends=sel===c.id?[0,Q.length-1]:[c.a===sel?0:Q.length-1];
+      ends.forEach(k=>{
+        const q=project(Q[k]);
+        if(!q)return;
+        h+=`<circle class="ring" cx="${q[0].toFixed(1)}" cy="${q[1].toFixed(1)}" r="${(7*zm+3).toFixed(1)}"/>`;
+        if(sel===c.id)h+=lab(q[0],q[1]-18,k?c.lb:c.la);
+      });
+    }
+  });
+
+  if(sel&&LBL[sel]&&shown(sel)){
+    const o=off(sel);
+    LBL[sel].forEach(l=>{
+      const q=project([l[1]+o[0],l[2]+o[1],l[3]+o[2]]);
+      if(q)h+=lab(q[0],q[1]-14,l[0]);
+    });
+  }
+
+  if(sel&&shown(sel)){
+    let anchor=null;
+    if(C[sel]){
+      const Q=cpos(C[sel]);
+      anchor=Q[Math.floor(Q.length/2)];
+    }else{
+      const u=[1e9,1e9,1e9,-1e9,-1e9,-1e9];
+      S.forEach(s=>{
+        if(mp(s.p)===sel&&shown(s.p)){
+          const o=off(s.o||s.p);
+          s.b.forEach((v,i)=>{const w=v+o[i%3];u[i]=i<3?Math.min(u[i],w):Math.max(u[i],w)});
+        }
+      });
+      if(u[0]<1e8)anchor=[(u[0]+u[3])/2,(u[1]+u[4])/2,u[5]+8];
+    }
+    if(anchor){
+      const q=project(anchor);
+      if(q)h+=lab(q[0],q[1]-24,C[sel]?'Cable '+C[sel].cn.toLowerCase()+' · '+C[sel].n:INFO[sel][1]);
+    }
+  }
+
+  ov.innerHTML=h;
+  const azN=Math.round(((az%360)+360)%360);
+  const elN=Math.round((((el+180)%360)+360)%360-180);
+  const side=Math.sin(el*D)<-0.05?' · Vista inferior':Math.sin(el*D)>0.05?' · Vista superior':' · Nivel del suelo';
+  $('#ro').textContent=`Paso ${step} · ${Math.round(Math.min(1,g)*100)}% separado · ${azN}° / ${elN}°${side}`;
+}
+
+function render(rebuild=true){
+  resizeCanvas();
+  if(rebuild)rebuildGeometry();
+  updateMatrices();
+
+  const dark=isDark();
+  gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+  gl.viewport(0,0,canvas.width,canvas.height);
+  if(dark)gl.clearColor(0.075,0.094,0.122,1);
+  else gl.clearColor(0.953,0.965,0.976,1);
+  gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+
+  gl.enable(gl.DEPTH_TEST);
+  gl.depthFunc(gl.LEQUAL);
+  gl.disable(gl.CULL_FACE);
+
+  gl.useProgram(progMain);
+  gl.uniformMatrix4fv(locM.mvp,false,curMVP);
+  gl.uniformMatrix4fv(locM.view,false,curView);
+
+  // Pase 1: sólidos y cables opacos
+  gl.disable(gl.BLEND);
+  gl.depthMask(true);
+  gl.enable(gl.POLYGON_OFFSET_FILL);
+  gl.polygonOffset(1.0,1.0);
+  gl.uniform1f(locM.alpha,1.0);
+  gl.uniform1f(locM.unlit,0.0);
+  if(counts.op){bindMain(bOpaque);gl.drawArrays(gl.TRIANGLES,0,counts.op)}
+  gl.disable(gl.POLYGON_OFFSET_FILL);
+
+  if(counts.ed){
+    gl.uniform1f(locM.unlit,1.0);
+    bindMain(bEdge);
+    gl.drawArrays(gl.LINES,0,counts.ed);
+  }
+
+  // Pase 2: plano de suelo (se vuelve translúcido al mirar desde abajo)
+  if(showFloor&&(counts.fl||counts.gr)){
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
+    gl.depthMask(false);
+    const fromBelow=Math.sin(el*D)<0;
+    gl.uniform1f(locM.unlit,1.0);
+    if(counts.fl){
+      gl.uniform1f(locM.alpha,fromBelow?0.20:0.78);
+      bindMain(bFloor);
+      gl.drawArrays(gl.TRIANGLES,0,counts.fl);
+    }
+    if(counts.gr){
+      gl.uniform1f(locM.alpha,fromBelow?0.48:0.85);
+      bindMain(bGrid);
+      gl.drawArrays(gl.LINES,0,counts.gr);
+    }
+  }
+
+  // Pase 3: piezas no seleccionadas translúcidas
+  if(counts.gh){
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
+    gl.depthMask(false);
+    gl.uniform1f(locM.unlit,0.0);
+    gl.uniform1f(locM.alpha,sel?0.16:0.35);
+    bindMain(bGhost);
+    gl.drawArrays(gl.TRIANGLES,0,counts.gh);
+  }
+
+  gl.depthMask(true);
+  gl.disable(gl.BLEND);
+  renderOverlay();
+}
+
+function pickAt(clientX,clientY){
+  const rect=stage.getBoundingClientRect();
+  const nx=(clientX-rect.left)/rect.width;
+  const ny=(clientY-rect.top)/rect.height;
+  if(nx<0||nx>1||ny<0||ny>1)return null;
+
+  gl.bindFramebuffer(gl.FRAMEBUFFER,pickFBO);
+  gl.viewport(0,0,PW,PH);
+  gl.disable(gl.BLEND);
+  gl.disable(gl.DITHER);
+  gl.enable(gl.DEPTH_TEST);
+  gl.depthMask(true);
+  gl.clearColor(0,0,0,1);
+  gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+
+  if(locM.norm>=0)gl.disableVertexAttribArray(locM.norm);
+  gl.useProgram(progPick);
+  gl.uniformMatrix4fv(locP.mvp,false,curMVP);
+  if(counts.pk){
+    gl.bindBuffer(gl.ARRAY_BUFFER,bPick.pos);
+    gl.enableVertexAttribArray(locP.pos);
+    gl.vertexAttribPointer(locP.pos,3,gl.FLOAT,false,0,0);
+    gl.bindBuffer(gl.ARRAY_BUFFER,bPick.col);
+    gl.enableVertexAttribArray(locP.col);
+    gl.vertexAttribPointer(locP.col,3,gl.FLOAT,false,0,0);
+    gl.drawArrays(gl.TRIANGLES,0,counts.pk);
+  }
+
+  const px=Math.min(PW-1,Math.max(0,Math.floor(nx*PW)));
+  const py=Math.min(PH-1,Math.max(0,Math.floor((1-ny)*PH)));
+  const buf=new Uint8Array(4);
+  gl.readPixels(px,py,1,1,gl.RGBA,gl.UNSIGNED_BYTE,buf);
+  gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+
+  const idNum=Math.round(buf[0]/8);
+  return NUM_TO_ID[idNum]||null;
+}
+
+/* ---------- interfaz y controles ---------- */
+const colorDot=hex=>`<span class="dot" style="background:${hex}"></span>`;
+
+function panel(){
+  const I=$('#info');
+  if(!sel){
+    I.innerHTML=`
+      <h2>👆 Toca una pieza</h2>
+      <small>Piezas y cables del carro</small>
+      <p>Toca cualquier pieza o cable del modelo 3D, o elígelo en la lista inferior para ver dónde se conecta, su función y sus terminales.</p>
+      <p>Arrastra en cualquier dirección para <b>girar 360°</b> (incluso por debajo del suelo) y revisar la parte inferior del chasis, los motores y la rueda loca.</p>
+      <p class="fun">💡 Consejo: usa <b>Desconectar</b> al elegir una pieza para separarla y ver con claridad su montaje.</p>`;
+    return;
+  }
+  const c=C[sel],dis=(dc[sel]||0)>.5||(dtg[sel]||0)>.5;
+  let h='';
+  if(c){
+    h=`<h2>${colorDot(c.hex)} Cable ${c.cn.toLowerCase()} · conexión ${c.n}</h2>
+       <small>Cable Dupont · Paso ${STEP[c.id]}</small>
+       <ul>
+         <li>▶ <span><b>Sale de:</b> ${c.from}</span></li>
+         <li>■ <span><b>Va a:</b> ${c.to}</span></li>
+       </ul>
+       <p>${c.tip}</p>`;
+  }else{
+    const f=INFO[sel];
+    h=`<h2>${f[0]} ${f[1]}</h2>
+       <small>${f[2]} · Paso ${STEP[sel]}</small>
+       <p>${f[3]}</p>
+       <p class="fun">💡 ${f[4]}</p>`;
+    if(f[5])h+=`<ul>${f[5].map(z=>`<li>◆ <span>${z}</span></li>`).join('')}</ul>`;
+    const cs=CL.filter(c=>c.a===sel||c.b===sel);
+    if(cs.length){
+      h+=`<small>Se conecta con:</small><ul>${cs.map(c=>`
+        <li>${colorDot(c.hex)}<span><a href="#" data-k="${c.id}" style="color:var(--acc)">Cable ${c.cn.toLowerCase()}</a> · ${c.a===sel?c.to:c.from}</span></li>`).join('')}</ul>`;
+    }
+  }
+  h+=`<p><span class="st">${dis?'🔌 Desconectado':'✅ Conectado'}</span></p>
+      <p><button id="det">${dis?'Conectar de nuevo':c?'Desconectar este cable':'Desconectar (separar)'}</button>
+         <button id="clr">Ver todo</button></p>`;
+  I.innerHTML=h;
+}
+
+function pick(id){sel=id&&sel!==id?id:null;fs=null;auto=false;syncB();panel();chipsOn();dirty=2}
+function detach(){if(!sel)return;dtg[sel]=(dtg[sel]||0)?0:1;panel();dirty=2}
+function chipsOn(){document.querySelectorAll('#chips button').forEach(b=>b.classList.toggle('on',b.dataset.id===sel))}
+function syncB(){
+  $('#auto').classList.toggle('on',auto);
+  $('#floorBtn').classList.toggle('on',showFloor);
+  document.querySelectorAll('#steps button').forEach(b=>b.classList.toggle('on',+b.dataset.s===(fs||0)));
+}
+
+function build(){
+  $('#steps').innerHTML=STEPT.map((t,i)=>`<button data-s="${i+1}" title="${t}">${i+1}. ${t}</button>`).join('')+'<button data-s="0">Todo armado</button>';
+  const G={Cerebro:['exp','mb'],Potencia:['l298n'],Movimiento:['chasis','motorR','motorL','wheelR','wheelL','caster'],Energía:['bat','tape']};
+  let h='';
+  for(const k in G){
+    h+=`<h3>${{Cerebro:'🧠',Potencia:'⚡',Movimiento:'⚙️',Energía:'🔋'}[k]} ${k}</h3><div>${
+      G[k].map(p=>`<button data-id="${p}">${INFO[p][0]} ${INFO[p][1]}</button>`).join('')
+    }</div>`;
+  }
+  h+=`<h3>🔌 Cables (11 conexiones)</h3><div>${
+    CL.map(c=>`<button data-id="${c.id}">${colorDot(c.hex)} ${c.n}. ${c.cn} → ${c.lb}</button>`).join('')
+  }</div>`;
+  $('#chips').innerHTML=h;
+
+  const presets=[['3/4',150,28],['Arriba',180,85],['Abajo',150,-38],['Frente',180,12],['Lado',90,12],['Atrás',0,15]];
+  $('#views').innerHTML=presets.map(v=>`<button data-v="${v[1]},${v[2]}">${v[0]}</button>`).join(' ');
+}
+
+document.addEventListener('click',e=>{
+  const b=e.target.closest('button,a');
+  if(!b)return;
+  if(b.dataset.id)pick(b.dataset.id);
+  else if(b.dataset.k){e.preventDefault();pick(b.dataset.k)}
+  else if(b.id==='det')detach();
+  else if(b.id==='clr')pick(null);
+  else if(b.dataset.s!==undefined){
+    const s=+b.dataset.s;
+    if(s){fs=fs===s?null:s;step=s}
+    else{step=5;fs=null}
+    sel=null;panel();dirty=2;syncB();chipsOn();
+  }else if(b.dataset.v){
+    const[va,ve]=b.dataset.v.split(',').map(Number);
+    taz=nearDeg(az,va);
+    tel=nearDeg(el,ve);
+    auto=false;syncB();dirty=Math.max(dirty,1);
+  }else if(b.id==='auto'){auto=!auto;syncB()}
+  else if(b.id==='floorBtn'){showFloor=!showFloor;syncB();dirty=2}
+  else if(b.id==='zi'){tzm=Math.min(2.4,tzm*1.2);dirty=Math.max(dirty,1)}
+  else if(b.id==='zo'){tzm=Math.max(0.55,tzm/1.2);dirty=Math.max(dirty,1)}
+});
+
+$('#ex').addEventListener('input',e=>{tg=e.target.value/100;dirty=2});
+
+/* ---------- arrastre 360° corregido + zoom táctil ---------- */
+const ptrs=new Map();
+let moved=false,lastPinch=0;
+
+stage.addEventListener('pointerdown',e=>{
+  stage.setPointerCapture(e.pointerId);
+  ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(ptrs.size===1){moved=false;drag=true}
+  else{moved=true;drag=false;const a=[...ptrs.values()];lastPinch=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y)}
+});
+
+stage.addEventListener('pointermove',e=>{
+  if(!ptrs.has(e.pointerId))return;
+  const prev=ptrs.get(e.pointerId);
+  const dx=e.clientX-prev.x,dy=e.clientY-prev.y;
+  ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+
+  if(ptrs.size===2){
+    const a=[...ptrs.values()];
+    const dist=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y);
+    if(lastPinch>0){tzm=Math.max(0.55,Math.min(2.4,tzm*(dist/lastPinch)));zm=tzm;dirty=Math.max(dirty,1)}
+    lastPinch=dist;
+    return;
+  }
+  if(!drag)return;
+  if(!moved&&Math.hypot(dx,dy)<4)return;
+  moved=true;auto=false;
+
+  const flip=Math.cos(el*D)>=0?1:-1;
+  taz+=dx*0.45*flip;
+  tel+=dy*0.45;
+  az=taz;el=tel;
+  dirty=Math.max(dirty,1);
+  syncB();
+});
+
+const endPtr=e=>{
+  const wasSingle=ptrs.size===1&&!moved;
+  ptrs.delete(e.pointerId);
+  if(ptrs.size<2)lastPinch=0;
+  if(ptrs.size===0)drag=false;
+  if(wasSingle&&e.type==='pointerup'){
+    const hit=pickAt(e.clientX,e.clientY);
+    pick(hit);
+  }
+};
+stage.addEventListener('pointerup',endPtr);
+stage.addEventListener('pointercancel',endPtr);
+
+stage.addEventListener('wheel',e=>{
+  e.preventDefault();
+  tzm=Math.max(0.55,Math.min(2.4,tzm*(e.deltaY<0?1.1:0.91)));
+  dirty=Math.max(dirty,1);
+},{passive:false});
+
+stage.addEventListener('keydown',e=>{
+  const k=e.key,flip=Math.cos(el*D)>=0?1:-1;
+  if(k==='ArrowRight')taz+=12*flip;
+  else if(k==='ArrowLeft')taz-=12*flip;
+  else if(k==='ArrowDown')tel+=10;
+  else if(k==='ArrowUp')tel-=10;
+  else if(k==='Escape')pick(null);
+  else return;
+  e.preventDefault();auto=false;syncB();dirty=Math.max(dirty,1);
+});
+
+window.addEventListener('resize',()=>{dirty=Math.max(dirty,1)});
+matchMedia('(prefers-color-scheme:dark)').addEventListener('change',()=>{dirty=2});
+
+/* ---------- bucle de animación ---------- */
+let last=0;
+function tick(ts){
+  const dt=Math.min(0.05,(ts-last)/1000||0),k=1-Math.exp(-dt*9);
+  last=ts;
+  let camCh=dirty>=1,geoCh=dirty>=2;
+  dirty=0;
+
+  if(auto&&!drag&&!sel){taz+=dt*14;camCh=true}
+  const lerp=(a,b,onCh)=>Math.abs(a-b)>0.01?(onCh(),a+(b-a)*k):b;
+  if(!drag){
+    az=lerp(az,taz,()=>camCh=true);
+    el=lerp(el,tel,()=>camCh=true);
+  }
+  zm=lerp(zm,tzm,()=>camCh=true);
+  g=lerp(g,tg,()=>geoCh=true);
+  for(const p in dtg)dc[p]=lerp(dc[p]||0,dtg[p],()=>geoCh=true);
+
+  if(camCh||geoCh)render(geoCh);
+  requestAnimationFrame(tick);
+}
+
+build();panel();syncB();render(true);requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>
